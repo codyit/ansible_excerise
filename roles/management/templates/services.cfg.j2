@@ -1,0 +1,42 @@
+{% set services_vars = groups.services | map('extract', hostvars) | list %}
+
+{% for service in services_vars %}
+define host {
+  use linux-server
+  display_name {{ service.inventory_hostname }}
+  host_name {{ service.ansible_host }}
+  address {{ service.ansible_host }}
+}
+{% endfor %}
+
+define hostgroup {
+  hostgroup_name allservices
+  alias All Services
+  members {{ services_vars | map(attribute="ansible_host") | join(",") }}
+}
+define hostgroup {
+  hostgroup_name loadbalancers
+  alias Loadbalancers
+  members {{ hostvars.loadbalancer.ansible_host }}
+}
+define hostgroup {
+  hostgroup_name webservices
+  alias Web Services
+  members {{  groups.webservers | map('extract', hostvars, 'ansible_host') | join(",") }}
+}
+
+define service {
+  hostgroup_name allservices
+  use generic-service
+  service_description Ping
+  check_command	check_ping!100.0,20%!500.0,60%
+}
+
+{% for check in ["check_users", "check_load", "check_disk", "check_zombie_procs", "check_total_procs"] %}
+define service {
+  hostgroup_name allservices
+  use generic-service
+  service_description Remote {{ check }}
+  check_command check_nrpe!{{ check }}
+}
+{% endfor %}

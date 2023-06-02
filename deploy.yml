@@ -1,0 +1,30 @@
+---
+- hosts: all
+  become: true
+  gather_facts: false
+  roles:
+    - common
+
+- hosts: services
+  become: true
+  gather_facts: false
+  roles:
+    - services
+
+- hosts: management
+  become: true
+  gather_facts: false
+  roles:
+    - management
+
+- hosts: webservers
+  become: true
+  gather_facts: true
+  roles:
+    - web
+
+- hosts: loadbalancer
+  become: true
+  gather_facts: true
+  roles:
+    - reverseproxy

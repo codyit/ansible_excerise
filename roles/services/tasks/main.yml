@@ -1,0 +1,42 @@
+---
+- name: Allow SSH from bastion
+  community.general.ufw:
+    rule: allow
+    direction: in
+    proto: tcp
+    src:  "{{ hostvars.management.ansible_host }}"
+    port: "22"
+
+- name: Enable UFW with default deny
+  community.general.ufw:
+    state: enabled
+    direction: incoming
+    policy: deny
+
+- name: Instal Nagios NRPE and plugins
+  package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - nagios-nrpe-server
+    - monitoring-plugins
+
+- name: Copy NRPE configuration
+  template:
+    src: nrpe.cfg.j2
+    dest: /etc/nagios/nrpe.cfg
+    mode: "0644"
+
+- name: NRPE restarted and enabled
+  service:
+    name: nagios-nrpe-server.service
+    state: restarted
+    enabled: yes
+
+- name: Allow NRPE from management (firewall)
+  community.general.ufw:
+    rule: allow
+    direction: in
+    proto: tcp
+    src:  "{{ hostvars.management.ansible_host }}"
+    port: "5666"

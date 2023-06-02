@@ -1,0 +1,60 @@
+---
+- name: Allow connection from HAProxy ports
+  community.general.ufw:
+    rule: allow
+    direction: in
+    proto: tcp
+    port: 60000:65000
+
+- name: Update ephemeral port range to avoid overlap with HAProxy listening ports preventing service start
+  sysctl:
+    name: net.ipv4.ip_local_port_range
+    value: "10000 59999"
+    state: present
+    sysctl_set: yes
+    reload: yes
+
+- name: (Disabled) Allows timewait socket reuse in case ephemeral ports become a bottle neck, enabling requires testing
+  sysctl:
+    name: net.ipv4.tcp_tw_reuse
+    value: "1"
+    state: absent
+    sysctl_set: yes
+    reload: yes
+
+- pam_limits:
+    domain: haproy
+    limit_type: soft
+    limit_item: nofile
+    value: 131072
+
+- pam_limits:
+    domain: haproy
+    limit_type: hard
+    limit_item: nofile
+    value: 131072
+
+- name: HAProxy exists
+  package:
+    name: haproxy
+    state: present
+
+- name: HAProxy enabled
+  lineinfile:
+    dest: /etc/default/haproxy
+    regexp: "^ENABLED.+$"
+    line: "ENABLED=1"
+    state: present
+
+- name: Copy HAProxy configuration
+  template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    mode: 0644
+    validate: haproxy -f %s -c -q
+
+- name: HAProxy started and enabled
+  service:
+    name: haproxy
+    state: restarted
+    enabled: yes

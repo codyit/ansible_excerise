@@ -1,0 +1,227 @@
+Some WIP dumps for debugging.
+
+
+{% if core['listen'] is defined %}{# 'listen' directive is only available in the 'server' context #}
+{% for listen in core['listen'] %}
+listen {{ listen['address'] if listen['address'] is defined }}{{ ':' if listen['address'] is defined and listen['port'] is defined }}{{ listen['port'] if listen['port'] is defined -}}
+{{- ' default_server' if listen['default_server'] is defined and listen['default_server'] is boolean and listen['default_server'] | bool -}}
+{{- ' ssl' if listen['ssl'] is defined and listen['ssl'] is boolean and listen['ssl'] | bool -}}
+{{- ' http2' if listen['http2'] is defined and listen['http2'] is boolean and listen['http2'] | bool else ' spdy' if listen['spdy'] is defined and listen['spdy'] is boolean and listen['spdy'] | bool -}}
+{{- ' proxy_protocol' if listen['proxy_protocol'] is defined and listen['proxy_protocol'] is boolean and listen['proxy_protocol'] | bool -}}
+{{- (' setfib=' + listen['setfib'] | string) if listen['setfib'] is defined -}}
+{{- (' fastopen=' + listen['fastopen'] | string) if listen['fastopen'] is defined and listen['fastopen'] is number -}}
+{{- (' backlog=' + listen['backlog'] | string) if listen['backlog'] is defined and listen['backlog'] is number -}}
+{{- (' rcvbuf=' + listen['rcvbuf'] | string) if listen['rcvbuf'] is defined -}}
+{{- (' sndbuf=' + listen['sndbuf'] | string) if listen['sndbuf'] is defined -}}
+{{- (' accept_filter=' + listen['accept_filter'] | string) if listen['accept_filter'] is defined -}}
+{{- ' deferred' if listen['deferred'] is defined and listen['deferred'] is boolean and listen['deferred'] | bool -}}
+{{- ' bind' if listen['bind'] is defined and listen['bind'] is boolean and listen['bind'] | bool -}}
+{{- (' ipv6only=' + listen['ipv6only'] | ternary('on', 'off')) if listen['ipv6only'] is defined and listen['ipv6only'] is boolean -}}
+{{- ' reuseport' if (listen['reuseport'] is defined and listen['reuseport'] is boolean and listen['reuseport'] | bool) -}}
+{{- (' so_keepalive=' + listen['so_keepalive'] | ternary('on', 'off')) if listen['so_keepalive'] is defined and listen['so_keepalive'] is boolean -}}
+{{- (' so_keepalive=' + (listen['so_keepalive']['keepidle'] | string if listen['so_keepalive']['keepidle'] is defined) + ':' + (listen['so_keepalive']['keepintvl'] | string if listen['so_keepalive']['keepintvl'] is defined) + ':' + (listen['so_keepalive']['keepcnt'] | string if listen['so_keepalive']['keepcnt'] is defined)) if listen['so_keepalive'] is defined and listen['so_keepalive'] is mapping }};
+{% endfor %}
+{% endif %}
+
+                import sys; sys.stdin = open('/dev/tty')
+                import pdb; pdb.set_trace()
+
+
+"/usr/lib/python3.11/site-packages/ansible/plugins/action/template.py" 192 lines --100%
+                import sys; sys.stdin = open('/dev/tty') 
+                import pdb; pdb.set_trace()
+                resultant = templar.do_template(template_data, preserve_trailing_newlines=True, escape_backslashes=False)
+
+<VirtualHost *:80>o
+
+The full traceback is:
+Traceback (most recent call last):
+  File "/usr/lib/python3.11/site-packages/ansible/template/__init__.py", line 987, in do_template
+    res = self.environment.concat(rf)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/site-packages/ansible/template/native_helpers.py", line 83, in ansible_concat
+    return ''.join([to_text(v) for v in nodes])
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/site-packages/ansible/template/native_helpers.py", line 83, in <listcomp>
+    return ''.join([to_text(v) for v in nodes])
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<template>", line 55, in root
+  File "/usr/lib/python3.11/site-packages/jinja2/runtime.py", line 349, in call
+    return __obj(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/site-packages/jinja2/runtime.py", line 814, in __call__
+    return self._invoke(arguments, autoescape)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/site-packages/jinja2/runtime.py", line 828, in _invoke
+    rv = self._func(*arguments)
+         ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aybabtu/.ansible/collections/ansible_collections/nginxinc/nginx_core/roles/nginx_config/templates/core.j2", line 312, in macro
+TypeError: sequence item 3: expected str instance, Undefined found
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.11/site-packages/ansible/plugins/action/template.py", line 141, in run
+    resultant = templar.do_template(template_data, preserve_trailing_newlines=True, escape_backslashes=False)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/site-packages/ansible/template/__init__.py", line 998, in do_template
+    raise AnsibleError("Unexpected templating type error occurred on (%s): %s" % (to_native(data), to_native(te)), orig_exc=te)
+ansible.errors.AnsibleError: Unexpected templating type error occurred on ({{ ansible_managed | comment }}
+
+{% if nginx_config_main_template['config']['main'] is defined %}
+{% from 'core.j2' import main with context %}
+{{ main(nginx_config_main_template['config']['main']) }}
+{%- endif %}
+
+{% if nginx_config_main_template['config']['include'] is defined and nginx_config_main_template['config']['include'] is not mapping %}
+{% for file in nginx_config_main_template['config']['include'] if nginx_config_main_template['config']['include'] is not string %}
+include {{ file }};
+{% else %}
+include {{ nginx_config_main_template['config']['include'] }};
+{% endfor %}
+{%- endif %}
+
+events {
+{% if nginx_config_main_template['config']['events'] is defined %}
+{% from 'core.j2' import events with context %}
+{% filter indent(4) %}
+    {{ events(nginx_config_main_template['config']['events']) }}
+{%- endfilter %}
+{% endif %}
+}
+
+{% if nginx_config_main_template['config']['http'] is defined %}
+http {
+{% if nginx_config_main_template['config']['http']['include'] is defined and nginx_config_main_template['config']['http']['include'] is not mapping %}
+{% for file in nginx_config_main_template['config']['http']['include'] if nginx_config_main_template['config']['http']['include'] is not string %}
+    include {{ file }};
+{% else %}
+    include {{ nginx_config_main_template['config']['http']['include'] }};
+{% endfor %}
+{% endif %}
+}
+{% endif %}
+
+{% if nginx_config_main_template['config']['stream'] is defined %}
+stream {
+{% if nginx_config_main_template['config']['stream']['include'] is defined and nginx_config_main_template['config']['stream']['include'] is not mapping %}
+{% for file in nginx_config_main_template['config']['stream']['include'] if nginx_config_main_template['config']['stream']['include'] is not string %}
+    include {{ file }};
+{% else %}
+    include {{ nginx_config_main_template['config']['stream']['include'] }};
+{% endfor %}
+{% endif %}
+}
+{% endif %}
+): sequence item 3: expected str instance, Undefined found. sequence item 3: expected str instance, Undefined found
+fatal: [webA]: FAILED! => {
+    "changed": false,
+    "msg": "AnsibleError: Unexpected templating type error occurred on ({{ ansible_managed | comment }}\n\n{% if nginx_config_main_template['config']['main'] is defined %}\n{% from 'core.j2' import main with context %}\n{{ main(nginx_config_main_template['config']['main']) }}\n{%- endif %}\n\n{% if nginx_config_main_template['config']['include'] is defined and nginx_config_main_template['config']['include'] is not mapping %}\n{% for file in nginx_config_main_template['config']['include'] if nginx_config_main_template['config']['include'] is not string %}\ninclude {{ file }};\n{% else %}\ninclude {{ nginx_config_main_template['config']['include'] }};\n{% endfor %}\n{%- endif %}\n\nevents {\n{% if nginx_config_main_template['config']['events'] is defined %}\n{% from 'core.j2' import events with context %}\n{% filter indent(4) %}\n    {{ events(nginx_config_main_template['config']['events']) }}\n{%- endfilter %}\n{% endif %}\n}\n\n{% if nginx_config_main_template['config']['http'] is defined %}\nhttp {\n{% if nginx_config_main_template['config']['http']['include'] is defined and nginx_config_main_template['config']['http']['include'] is not mapping %}\n{% for file in nginx_config_main_template['config']['http']['include'] if nginx_config_main_template['config']['http']['include'] is not string %}\n    include {{ file }};\n{% else %}\n    include {{ nginx_config_main_template['config']['http']['include'] }};\n{% endfor %}\n{% endif %}\n}\n{% endif %}\n\n{% if nginx_config_main_template['config']['stream'] is defined %}\nstream {\n{% if nginx_config_main_template['config']['stream']['include'] is defined and nginx_config_main_template['config']['stream']['include'] is not mapping %}\n{% for file in nginx_config_main_template['config']['stream']['include'] if nginx_config_main_template['config']['stream']['include'] is not string %}\n    include {{ file }};\n{% else %}\n    include {{ nginx_config_main_template['config']['stream']['include'] }};\n{% endfor %}\n{% endif %}\n}\n{% endif %}\n): sequence item 3: expected str instance, Undefined found. sequence item 3: expected str instance, Undefined found"
+}
+The full traceback is:
+Traceback (most recent call last):
+  File "/usr/lib/python3.11/site-packages/ansible/template/__init__.py", line 987, in do_template
+    res = self.environment.concat(rf)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/site-packages/ansible/template/native_helpers.py", line 83, in ansible_concat
+    return ''.join([to_text(v) for v in nodes])
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/site-packages/ansible/template/native_helpers.py", line 83, in <listcomp>
+    return ''.join([to_text(v) for v in nodes])
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<template>", line 55, in root
+  File "/usr/lib/python3.11/site-packages/jinja2/runtime.py", line 349, in call
+    return __obj(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/site-packages/jinja2/runtime.py", line 814, in __call__
+    return self._invoke(arguments, autoescape)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/site-packages/jinja2/runtime.py", line 828, in _invoke
+    rv = self._func(*arguments)
+         ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aybabtu/.ansible/collections/ansible_collections/nginxinc/nginx_core/roles/nginx_config/templates/core.j2", line 312, in macro
+TypeError: sequence item 3: expected str instance, Undefined found
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.11/site-packages/ansible/plugins/action/template.py", line 141, in run
+    resultant = templar.do_template(template_data, preserve_trailing_newlines=True, escape_backslashes=False)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/site-packages/ansible/template/__init__.py", line 998, in do_template
+    raise AnsibleError("Unexpected templating type error occurred on (%s): %s" % (to_native(data), to_native(te)), orig_exc=te)
+ansible.errors.AnsibleError: Unexpected templating type error occurred on ({{ ansible_managed | comment }}
+
+{% if nginx_config_main_template['config']['main'] is defined %}
+{% from 'core.j2' import main with context %}
+{{ main(nginx_config_main_template['config']['main']) }}
+{%- endif %}
+
+{% if nginx_config_main_template['config']['include'] is defined and nginx_config_main_template['config']['include'] is not mapping %}
+{% for file in nginx_config_main_template['config']['include'] if nginx_config_main_template['config']['include'] is not string %}
+include {{ file }};
+{% else %}
+include {{ nginx_config_main_template['config']['include'] }};
+{% endfor %}
+{%- endif %}
+
+events {
+{% if nginx_config_main_template['config']['events'] is defined %}
+{% from 'core.j2' import events with context %}
+{% filter indent(4) %}
+    {{ events(nginx_config_main_template['config']['events']) }}
+{%- endfilter %}
+{% endif %}
+}
+
+{% if nginx_config_main_template['config']['http'] is defined %}
+http {
+{% if nginx_config_main_template['config']['http']['include'] is defined and nginx_config_main_template['config']['http']['include'] is not mapping %}
+{% for file in nginx_config_main_template['config']['http']['include'] if nginx_config_main_template['config']['http']['include'] is not string %}
+    include {{ file }};
+{% else %}
+    include {{ nginx_config_main_template['config']['http']['include'] }};
+{% endfor %}
+{% endif %}
+}
+{% endif %}
+
+{% if nginx_config_main_template['config']['stream'] is defined %}
+stream {
+{% if nginx_config_main_template['config']['stream']['include'] is defined and nginx_config_main_template['config']['stream']['include'] is not mapping %}
+{% for file in nginx_config_main_template['config']['stream']['include'] if nginx_config_main_template['config']['stream']['include'] is not string %}
+    include {{ file }};
+{% else %}
+    include {{ nginx_config_main_template['config']['stream']['include'] }};
+{% endfor %}
+{% endif %}
+}
+{% endif %}
+): sequence item 3: expected str instance, Undefined found. sequence item 3: expected str instance, Undefined found
+fatal: [webB]: FAILED! => {
+    "changed": false,
+    "msg": "AnsibleError: Unexpected templating type error occurred on ({{ ansible_managed | comment }}\n\n{% if nginx_config_main_template['config']['main'] is defined %}\n{% from 'core.j2' import main with context %}\n{{ main(nginx_config_main_template['config']['main']) }}\n{%- endif %}\n\n{% if nginx_config_main_template['config']['include'] is defined and nginx_config_main_template['config']['include'] is not mapping %}\n{% for file in nginx_config_main_template['config']['include'] if nginx_config_main_template['config']['include'] is not string %}\ninclude {{ file }};\n{% else %}\ninclude {{ nginx_config_main_template['config']['include'] }};\n{% endfor %}\n{%- endif %}\n\nevents {\n{% if nginx_config_main_template['config']['events'] is defined %}\n{% from 'core.j2' import events with context %}\n{% filter indent(4) %}\n    {{ events(nginx_config_main_template['config']['events']) }}\n{%- endfilter %}\n{% endif %}\n}\n\n{% if nginx_config_main_template['config']['http'] is defined %}\nhttp {\n{% if nginx_config_main_template['config']['http']['include'] is defined and nginx_config_main_template['config']['http']['include'] is not mapping %}\n{% for file in nginx_config_main_template['config']['http']['include'] if nginx_config_main_template['config']['http']['include'] is not string %}\n    include {{ file }};\n{% else %}\n    include {{ nginx_config_main_template['config']['http']['include'] }};\n{% endfor %}\n{% endif %}\n}\n{% endif %}\n\n{% if nginx_config_main_template['config']['stream'] is defined %}\nstream {\n{% if nginx_config_main_template['config']['stream']['include'] is defined and nginx_config_main_template['config']['stream']['include'] is not mapping %}\n{% for file in nginx_config_main_template['config']['stream']['include'] if nginx_config_main_template['config']['stream']['include'] is not string %}\n    include {{ file }};\n{% else %}\n    include {{ nginx_config_main_template['config']['stream']['include'] }};\n{% endfor %}\n{% endif %}\n}\n{% endif %}\n): sequence item 3: expected str instance, Undefined found. sequence item 3: expected str instance, Undefined found"
+}
+
+[
+  {
+    config: {
+      servers: [
+        {
+          core: { listen: [{ address: "0.0.0.0", port: "80" }] },
+          locations: [
+            { core: { index: "index.html", root: "/var/www" }, location: "/" },
+          ],
+        },
+      ],
+    },
+    deployment_location: "/etc/nginx/conf.d/default.conf",
+    template_file: "http/default.conf.j2",
+  },
+]
+
+{{- ' ssl' if listen['ssl'] is defined and listen['ssl'] is boolean and listen['ssl'] | bool -}}
+{{- ' ssl' if listen['ssl'] is defined and listen['ssl'] is boolean and listen['ssl'] | bool -}}
+
+b /usr/lib/python3.11/site-packages/jinja2/runtime.py:828
+

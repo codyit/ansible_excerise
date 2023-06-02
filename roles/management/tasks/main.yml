@@ -1,0 +1,67 @@
+---
+- name: Allow SSH from public
+  community.general.ufw:
+    rule: allow
+    direction: in
+    proto: tcp
+    port: "22"
+
+- name: Ensure UFW is enabled
+  community.general.ufw:
+    state: enabled
+    direction: incoming
+    policy: deny
+
+- name: Ensure Nagios4 server packages exist
+  package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - nagios4
+    - nagios-plugins-contrib
+    - nagios-nrpe-plugin
+
+- name: Create Nagios4 servers inventory directory
+  ansible.builtin.file:
+    path: /etc/nagios4/servers
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure Nagios4 servers inventory is included
+  lineinfile:
+    path: /etc/nagios4/nagios.cfg
+    state: present
+    line: "cfg_file=/etc/nagios4/objects/services.cfg"
+
+- name: Copy Nagios4 servers inventory
+  template:
+    src: services.cfg.j2
+    dest: /etc/nagios4/objects/services.cfg
+    mode: "0644"
+
+- name: Nagios4 restarted and enabled
+  service:
+    name: nagios4
+    state: restarted
+    enabled: yes
+
+- name: Copy Apache2 config
+  template:
+    src: apache2.conf.j2
+    dest: /etc/nagios4/apache2.conf
+    mode: "0644"
+
+- name: Lockdown Apache2 to localhost
+  lineinfile:
+    path: /etc/apache2/ports.conf
+    state: present
+    regexp: "^Listen 80$"
+    line: "Listen 127.0.0.1:80"
+
+- name: Apache2 restarted and enabled
+  service:
+    name: apache2
+    state: restarted
+    enabled: yes

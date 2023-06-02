@@ -1,0 +1,44 @@
+global
+  maxconn 95000
+  log /dev/log  local0
+  log /dev/log  local1 notice
+  stats socket /run/haproxy/admin.sock level admin
+  user haproxy
+  group haproxy
+  daemon
+
+defaults
+  log global
+  mode  tcp
+  option  dontlognull
+  timeout connect 6000
+  timeout client 12000
+  timeout server 12000
+
+  errorfile 400 /etc/haproxy/errors/400.http
+  errorfile 403 /etc/haproxy/errors/403.http
+  errorfile 408 /etc/haproxy/errors/408.http
+  errorfile 500 /etc/haproxy/errors/500.http
+  errorfile 502 /etc/haproxy/errors/502.http
+  errorfile 503 /etc/haproxy/errors/503.http
+  errorfile 504 /etc/haproxy/errors/504.http
+
+frontend front
+  bind :60000-65000
+  mode tcp
+  default_backend www
+
+peers sticktables
+  peer {{ ansible_hostname }} localhost:1080
+  table sticky-sessions type ip size 1m
+
+backend www
+  mode tcp
+  fullconn 50000
+  balance leastconn
+  stick match src table sticktables/sticky-sessions
+  stick store-request src table sticktables/sticky-sessions
+  timeout queue 30s
+{% for webserver in groups.webservers %}
+  server {{ hostvars[webserver].inventory_hostname }} {{ hostvars[webserver].ansible_host }}:80 send-proxy check observe layer4 error-limit 10 on-error fail-check
+{% endfor %}

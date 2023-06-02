@@ -1,0 +1,27 @@
+---
+- name: Ensure UTC timezone
+  community.general.timezone:
+    name: Etc/UTC
+
+- name: Update apt package cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 17280 # 12 hours
+
+- name: Set firewall logging
+  community.general.ufw:
+    logging: "on"
+
+- name: Create client user
+  user:
+    name: client
+    groups: admin,sudo,www-data
+    create_home: true
+    shell: /bin/bash
+    state: present
+
+- name: Set authorized key for client
+  authorized_key:
+    user: client
+    state: present
+    key: "{{ lookup('file', 'files/public_keys.txt') }}"
